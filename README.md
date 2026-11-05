@@ -1,6 +1,6 @@
 # Vision SE
 
-Turn your Mac desktop into a large, head-tracked virtual screen using an iPhone and a Cardboard-style headset. Add a camera view of your surroundings, control the Mac cursor with head movement, or use hand gestures to click and reposition the virtual screen.
+Inspired by Apple's Vision Pro, but at a fraction of the cost. Turn your Mac desktop into a large, head-tracked virtual workspace in VR using only an iPhone and a cheap, Google Cardboard-style headset. Add a camera view of your surroundings, control the Mac cursor with head movement, or use hand gestures to click and reposition the virtual screen.
 
 This is an experimental local-network project. Setup is required on both the Mac and phone. See [release validation](docs/validation.md) for completed checks and the physical-device checks still to be performed.
 
