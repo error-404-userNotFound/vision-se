@@ -1,0 +1,6 @@
+# Core: CPython 3.12 on macOS. Gesture extras use opencv-contrib-python too.
+Flask==3.1.2
+mss==10.1.0
+numpy==1.26.4
+opencv-contrib-python==4.11.0.86
+PyAutoGUI==0.9.54

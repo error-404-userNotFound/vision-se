@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>VR v4.4.1 Gesture Host</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a30;
+      --line: #31405f;
+      --ok: #22c55e;
+      --bad: #ef4444;
+      --text: #e5e7eb;
+      --sub: #9ca3af;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(90% 90% at 0% 0%, #131d3a 0%, var(--bg) 50%, #070b15 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #wrap {
+      display: grid;
+      grid-template-columns: minmax(520px, 1fr) 380px;
+      gap: 14px;
+      height: 100%;
+      box-sizing: border-box;
+      padding: 14px;
+    }
+    #feedCard, #side {
+      background: color-mix(in oklab, var(--panel) 88%, black);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    #feedHead, #sideHead {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #status {
+      font-size: 12px;
+      color: var(--sub);
+      margin-left: auto;
+    }
+    #feed {
+      width: 100%;
+      height: calc(100% - 48px);
+      object-fit: contain;
+      background: #000;
+      display: block;
+    }
+    #side {
+      display: grid;
+      grid-template-rows: auto auto auto 1fr;
+    }
+    .block {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 13px;
+    }
+    .label { color: var(--sub); }
+    .yes, .no {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .yes {
+      color: #052e16;
+      background: color-mix(in oklab, var(--ok) 70%, white);
+      border-color: color-mix(in oklab, var(--ok) 70%, black);
+    }
+    .no {
+      color: #7f1d1d;
+      background: color-mix(in oklab, var(--bad) 70%, white);
+      border-color: color-mix(in oklab, var(--bad) 70%, black);
+    }
+    #logs {
+      margin: 0;
+      padding: 10px 12px;
+      list-style: none;
+      overflow: auto;
+      font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #d1fae5;
+      background: #061014;
+    }
+    #logs li {
+      margin: 0 0 4px 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <section id="feedCard">
+      <div id="feedHead">
+        <span>Phone Camera + MediaPipe Overlay</span>
+        <span id="status">connecting…</span>
+      </div>
+      <img id="feed" alt="overlay feed"/>
+    </section>
+
+    <aside id="side">
+      <div id="sideHead">Gesture Status</div>
+      <div class="block" id="gestureRows"></div>
+      <div class="block" id="statsRows"></div>
+      <ul id="logs"></ul>
+    </aside>
+  </div>
+
+  <script type="module" src="/static/js/gesture_host.js"></script>
+</body>
+</html>

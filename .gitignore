@@ -1,0 +1,23 @@
+# Local credentials and certificates
+certs/
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+# Environments, caches and outputs
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.DS_Store
+*.log
+dist/
+build/
+*.egg-info/
+# Local managed Python runtime
+.python/
+# Vendored Three.js distribution is source, not a generated local build.
+!static/vendor/three/build/
+!static/vendor/three/build/*.js

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Cardboard VR — Thin Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <style>
+    html, body {
+      margin:0; padding:0; background:#000;
+      height:100%; overflow:hidden;
+    }
+
+    /* Hidden raw remote video; we copy from this into eye canvases */
+    #remoteVideo {
+      position:fixed; inset:0;
+      width:100vw; height:100vh;
+      object-fit:cover;
+      background:#000;
+      opacity:0;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    /* Per-eye canvases (3D world + shared screen) */
+    .eyeCanvas {
+      position:fixed; top:0;
+      width:50vw; height:100vh;
+      display:block;
+      z-index:1;
+      opacity:1; /* adjustable via screen opacity slider */
+    }
+    #eyeCanvasL { left:0; }
+    #eyeCanvasR { right:0; }
+
+    /* ===== Outside camera overlay with proper clipping ===== */
+
+    /* Each eye has its own container that clips at the center line */
+    .camContainer {
+      position:fixed; top:0;
+      width:50vw; height:100vh;
+      overflow:hidden;          /* CRITICAL: clip anything crossing the center */
+      pointer-events:none;
+      z-index:3;
+    }
+    #camContainerL { left:0; }
+    #camContainerR { right:0; }
+
+    /* The video inside is wider than half-screen so we don't get black gaps,
+       but it is clipped by the container. */
+    .camEye {
+      position:absolute; top:0;
+      width:120vw; height:100vh;
+      object-fit:cover;
+      pointer-events:none;
+      mix-blend-mode:screen;
+      opacity:0;
+    }
+    .mpOverlay {
+      position:absolute; top:0;
+      width:120vw; height:100vh;
+      pointer-events:none;
+      opacity:0;
+    }
+    /* Base position: centered with some overhang inside each half */
+    #camOverlayL { left:-35vw; }
+    #camOverlayR { left:-35vw; }
+    #mpOverlayL { left:-35vw; }
+    #mpOverlayR { left:-35vw; }
+
+    /* Per-eye static red-dot reticle (2D overlay) */
+    .eyeReticle {
+      position:fixed; top:0;
+      width:50vw; height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      pointer-events:none;
+      z-index:4;
+    }
+    #reticleL { left:0; }
+    #reticleR { right:0; }
+
+    .eyeReticle .retDot {
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:red;
+      box-shadow:0 0 8px rgba(255,0,0,0.9);
+      transform:translateX(0); /* updated dynamically */
+    }
+
+    /* HUD */
+    #hud {
+      position:fixed; left:0; right:0; bottom:0;
+      display:flex; gap:10px; align-items:flex-start;
+      background:rgba(0,0,0,.55);
+      color:#fff; font:14px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding:10px; z-index:10;
+    }
+    #hud .col { flex:1 1 0; min-width:0; }
+    #hud label { display:block; margin-bottom:4px; }
+    #hud input[type=range] { width:100%; }
+
+    #status {
+      font-size:12px; opacity:0.8;
+      margin-right:8px;
+    }
+
+    #gear {
+      position:fixed; right:12px; bottom:12px;
+      width:42px; height:42px;
+      border-radius:50%;
+      background:rgba(0,0,0,.7);
+      color:#fff;
+      display:none;
+      align-items:center; justify-content:center;
+      font-size:22px; z-index:11;
+      cursor:pointer;
+    }
+    #hideHud {
+      margin-left:auto;
+    }
+    button {
+      font:inherit;
+      padding:3px 8px;
+      border-radius:4px;
+      border:1px solid #777;
+      background:#222;
+      color:#fff;
+    }
+    select, input[type=checkbox] {
+      font:inherit;
+    }
+  </style>
+</head>
+<body>
+  <!-- Hidden raw VR stream; used as source for the two eye canvases -->
+  <video id="remoteVideo" autoplay playsinline muted></video>
+
+  <!-- Per-eye views (3D world + shared screen) -->
+  <canvas id="eyeCanvasL" class="eyeCanvas"></canvas>
+  <canvas id="eyeCanvasR" class="eyeCanvas"></canvas>
+
+  <!-- Outside camera overlay (each eye clipped to its half of the screen) -->
+  <div id="camContainerL" class="camContainer">
+    <video id="camOverlayL" class="camEye" autoplay playsinline muted></video>
+    <canvas id="mpOverlayL" class="mpOverlay"></canvas>
+  </div>
+  <div id="camContainerR" class="camContainer">
+    <video id="camOverlayR" class="camEye" autoplay playsinline muted></video>
+    <canvas id="mpOverlayR" class="mpOverlay"></canvas>
+  </div>
+
+  <!-- Per-eye static red-dot reticle (2D overlay, anchored to 3D world) -->
+  <div id="reticleL" class="eyeReticle"><div class="retDot"></div></div>
+  <div id="reticleR" class="eyeReticle"><div class="retDot"></div></div>
+
+  <!-- HUD controls -->
+  <div id="hud">
+    <div style="display:flex; flex-direction:column; gap:4px;">
+      <div id="status">disconnected</div>
+      <div>
+        <button id="enableMotion">Enable Motion</button>
+        <button id="recenter">Recenter</button>
+        <button id="fs">Full Screen</button>
+        <button id="hideHud">Hide HUD</button>
+      </div>
+    </div>
+
+    <div class="col">
+      <label>Size
+        <input id="size" type="range" min="0.20" max="6.00" step="0.01" value="2.60">
+        <span id="sizeVal">2.60×</span>
+      </label>
+      <label>Dist
+        <input id="dist" type="range" min="0.30" max="8.00" step="0.01" value="1.50">
+        <span id="distVal">1.50 m</span>
+      </label>
+      <label>Curve radius
+        <input id="curveRadius" type="range" min="1.00" max="30.00" step="0.10" value="6.00">
+        <span id="curveRadiusVal">6.00 m</span>
+      </label>
+      <label>Eye px
+        <input id="eyePx" type="range" min="-60" max="60" step="1" value="16">
+        <span id="eyePxVal">16 px</span>
+      </label>
+      <label><input id="converge" type="checkbox">Converge</label>
+    </div>
+
+    <div class="col">
+      <button id="enableCam">Enable Camera</button>
+      <label>Lens
+        <select id="camLens">
+          <option value="normal" selected>normal</option>
+          <option value="wide">wide</option>
+        </select>
+      </label>
+      <label>Opacity
+        <input id="camOpacity" type="range" min="0" max="100" step="1" value="70">
+        <span id="camOpacityVal">70%</span>
+      </label>
+      <label>Blend
+        <select id="camBlend">
+          <option value="screen" selected>screen</option>
+          <option value="normal">normal</option>
+        </select>
+      </label>
+      <label><input id="camEnabled" type="checkbox">Cam On</label>
+    </div>
+
+    <div class="col">
+      <label><input id="cursorEnabled" type="checkbox">Gaze Cursor</label>
+      <label><input id="gestureEnabled" type="checkbox">Pinch Click</label>
+      <label>Filter
+        <select id="filterMode">
+          <option value="one_euro">One-Euro (smooth)</option>
+          <option value="simple" selected>Simple (no filter)</option>
+        </select>
+      </label>
+      <label>Pinch inactive
+        <input id="gestureInactiveMs" type="range" min="150" max="2000" step="10" value="700">
+        <span id="gestureInactiveMsVal">700 ms</span>
+      </label>
+      <label>Pinch hold threshold
+        <input id="gestureDoubleMs" type="range" min="200" max="2500" step="10" value="1000">
+        <span id="gestureDoubleMsVal">1000 ms</span>
+      </label>
+      <label>Dot size
+        <input id="dotSize" type="range" min="2" max="24" step="1" value="8">
+        <span id="dotSizeVal">8 px</span>
+      </label>
+      <label>Screen opacity
+        <input id="screenOpacity" type="range" min="40" max="100" step="1" value="100">
+        <span id="screenOpacityVal">100%</span>
+      </label>
+      <label><input id="mpOverlayEnabled" type="checkbox" checked>MP Overlay</label>
+    </div>
+  </div>
+
+  <div id="gear">⚙️</div>
+
+  <script type="module" src="/static/js/viewer.js"></script>
+</body>
+</html>

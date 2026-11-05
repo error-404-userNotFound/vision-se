@@ -1,0 +1,3 @@
+-r requirements.txt
+# Pin the legacy Solutions API used by this prototype.
+mediapipe==0.10.21

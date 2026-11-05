@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>VR Host — Big Screen Renderer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    html, body {
+      margin:0; padding:0; height:100%; overflow:hidden;
+      background:#000;
+    }
+    #hostCanvas {
+      position:fixed; inset:0;
+      width:100vw; height:100vh;
+      display:block;
+    }
+    #mjpegHost {
+      position:fixed;
+      left:-9999px; top:-9999px;
+      width:1px; height:1px; opacity:0;
+    }
+    #statusHost {
+      position:fixed; left:8px; top:8px;
+      padding:4px 8px; background:rgba(0,0,0,.5);
+      color:#0f0; font:12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      z-index:10;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="hostCanvas"></canvas>
+  <img id="mjpegHost" alt="screen" />
+  <div id="statusHost">host: init</div>
+
+  <script type="module" src="/static/js/host.js"></script>
+</body>
+</html>
